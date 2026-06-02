@@ -26,7 +26,7 @@ function App() {
 
   const fetchPosts = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/posts');
+      const response = await axios.get('/api/posts');
       setPosts(response.data);
     } catch (error) {
       console.error("데이터를 불러오는데 실패했습니다.", error);
@@ -37,7 +37,7 @@ function App() {
   const handleRequestCode = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/request-code', { email });
+      const res = await axios.post('/api/auth/request-code', { email });
       alert(res.data.message);
       setIsCodeSent(true); // 전송 성공 시 인증번호 입력창 띄우기
     } catch (error) {
@@ -49,7 +49,7 @@ function App() {
   const handleVerifyCode = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:3000/api/auth/verify-code', { email, code: authCode });
+      const res = await axios.post('/api/auth/verify-code', { email, code: authCode });
       alert(res.data.message);
 
       // ★ 핵심: 인증 성공 시 브라우저(localStorage)에 통행증 저장
@@ -66,7 +66,7 @@ function App() {
     if (!title || !description || !password) return alert("제목, 내용, 비밀번호를 모두 입력해주세요!");
 
     try {
-      await axios.post('http://localhost:3000/api/posts', { title, description, password });
+      await axios.post('/api/posts', { title, description, password });
       setTitle('');
       setDescription('');
       setPassword('');
@@ -82,7 +82,7 @@ function App() {
     if (!inputPassword) return;
 
     try {
-      const res = await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+      const res = await axios.delete(`/api/posts/${postId}`, {
         data: { password: inputPassword }
       });
       alert(res.data.message);
@@ -184,7 +184,7 @@ function CommentSection({ topicId }) {
 
   const fetchComments = async () => {
     try {
-      const res = await axios.get(`http://localhost:3000/api/comments/${topicId}`);
+      const res = await axios.get(`/api/comments/${topicId}`);
       setComments(res.data);
     } catch (error) {
       console.error("댓글 로딩 실패", error);
