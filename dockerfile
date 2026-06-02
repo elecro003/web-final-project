@@ -26,5 +26,6 @@ COPY nginx.conf /etc/nginx/sites-enabled/default
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+
 EXPOSE 80
 CMD ["/start.sh"]
