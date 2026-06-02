@@ -1,122 +1,229 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // 게시판 상태
+  const [posts, setPosts] = useState([]);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [password, setPassword] = useState(''); // 게시글 비밀번호 상태 추가
+
+  // 이메일 인증 상태 (신규 추가!)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState('');
+  const [authCode, setAuthCode] = useState('');
+  const [isCodeSent, setIsCodeSent] = useState(false);
+
+  // 1. 화면이 켜질 때 인증 여부 확인 및 게시글 불러오기
+  useEffect(() => {
+    // 브라우저 로컬 스토리지에 '통행증'이 있는지 검사
+    const token = localStorage.getItem('inu_auth_token');
+    if (token === 'true') {
+      setIsAuthenticated(true);
+    }
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/posts');
+      setPosts(response.data);
+    } catch (error) {
+      console.error("데이터를 불러오는데 실패했습니다.", error);
+    }
+  };
+
+  // 2. 인증번호 전송 요청 API 호출
+  const handleRequestCode = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post('http://localhost:3000/api/auth/request-code', { email });
+      alert(res.data.message);
+      setIsCodeSent(true); // 전송 성공 시 인증번호 입력창 띄우기
+    } catch (error) {
+      alert(error.response?.data?.message || "오류가 발생했습니다.");
+    }
+  };
+
+  // 3. 인증번호 검증 API 호출
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post('http://localhost:3000/api/auth/verify-code', { email, code: authCode });
+      alert(res.data.message);
+
+      // ★ 핵심: 인증 성공 시 브라우저(localStorage)에 통행증 저장
+      localStorage.setItem('inu_auth_token', 'true');
+      setIsAuthenticated(true);
+    } catch (error) {
+      alert(error.response?.data?.message || "인증 번호가 틀렸습니다.");
+    }
+  };
+
+  // 4. 게시글 등록 API 호출
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title || !description || !password) return alert("제목, 내용, 비밀번호를 모두 입력해주세요!");
+
+    try {
+      await axios.post('http://localhost:3000/api/posts', { title, description, password });
+      setTitle('');
+      setDescription('');
+      setPassword('');
+      fetchPosts();
+    } catch (error) {
+      console.error("게시글 등록 실패", error);
+    }
+  };
+
+  // 5. 게시글 삭제 API 호출
+  const handleDelete = async (postId) => {
+    const inputPassword = prompt("게시글 삭제를 위해 비밀번호를 입력해주세요.");
+    if (!inputPassword) return;
+
+    try {
+      const res = await axios.delete(`http://localhost:3000/api/posts/${postId}`, {
+        data: { password: inputPassword }
+      });
+      alert(res.data.message);
+      fetchPosts();
+    } catch (error) {
+      alert(error.response?.data?.message || "삭제 실패");
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
+      <h1>INU CSE 익명 게시판</h1>
 
-      <div className="ticks"></div>
+      {/* ★ 조건부 렌더링: 
+        isAuthenticated(인증됨)가 false면 인증창을 보여주고, true면 글쓰기 폼을 보여줍니다. 
+      */}
+      {!isAuthenticated ? (
+        <div style={{ padding: '20px', background: '#ffebee', marginBottom: '20px', borderRadius: '8px' }}>
+          <h3>🔒 인천대 학생 인증이 필요합니다</h3>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {/* 이메일 입력 폼 */}
+          <form onSubmit={handleRequestCode} style={{ marginBottom: '10px' }}>
+            <input
+              type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="인천대 이메일 (@inu.ac.kr)" required
+              style={{ padding: '8px', width: '70%', marginRight: '5px' }}
+              disabled={isCodeSent} // 코드 발송 후에는 이메일 수정 불가
+            />
+            <button type="submit" disabled={isCodeSent}>인증번호 받기</button>
+          </form>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          {/* 인증번호 입력 폼 (코드가 발송된 후에만 보임) */}
+          {isCodeSent && (
+            <form onSubmit={handleVerifyCode}>
+              <input
+                type="text" value={authCode} onChange={(e) => setAuthCode(e.target.value)}
+                placeholder="6자리 인증번호 입력" required
+                style={{ padding: '8px', width: '70%', marginRight: '5px' }}
+              />
+              <button type="submit">인증 확인</button>
+            </form>
+          )}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ marginBottom: '20px', padding: '20px', background: '#e3f2fd', borderRadius: '8px' }}>
+          <h3>글 쓰기</h3>
+          <input
+            value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder="제목" style={{ display: 'block', marginBottom: '10px', width: '100%', padding: '8px' }}
+          />
+          <textarea
+            value={description} onChange={(e) => setDescription(e.target.value)}
+            placeholder="내용을 입력하세요" style={{ display: 'block', marginBottom: '10px', width: '100%', height: '80px', padding: '8px' }}
+          />
+          <input
+            type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            placeholder="삭제용 비밀번호 (4자리 이상)" style={{ display: 'block', marginBottom: '10px', width: '100%', padding: '8px' }}
+          />
+          <button type="submit" style={{ padding: '10px 20px' }}>등록하기</button>
+        </form>
+      )}
+
+      {/* 게시글 목록 (인증 여부 상관없이 누구나 볼 수는 있음) */}
+      <h3>게시글 목록</h3>
+      {posts.length === 0 ? <p>아직 작성된 글이 없습니다.</p> : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {posts.map(post => (
+            <li key={post.id} style={{ marginBottom: '15px', padding: '15px', border: '1px solid #ccc', borderRadius: '8px', position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <strong style={{ fontSize: '1.2em' }}>{post.title}</strong>
+                <button
+                  onClick={() => handleDelete(post.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ff4444' }}
+                >
+                  🗑️ 삭제
+                </button>
+              </div>
+              <span style={{ color: '#555', display: 'block', marginTop: '8px', marginBottom: '15px' }}>{post.description}</span>
+
+              {/* 댓글 섹션 */}
+              <hr style={{ border: '0', borderTop: '1px solid #eee', marginBottom: '10px' }} />
+              <CommentSection topicId={post.id} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
-export default App
+// 댓글 컴포넌트
+function CommentSection({ topicId }) {
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+
+  useEffect(() => {
+    fetchComments();
+  }, [topicId]);
+
+  const fetchComments = async () => {
+    try {
+      const res = await axios.get(`http://localhost:3000/api/comments/${topicId}`);
+      setComments(res.data);
+    } catch (error) {
+      console.error("댓글 로딩 실패", error);
+    }
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    try {
+      await axios.post('/api/comments', { topic_id: topicId, content: newComment });
+      setNewComment('');
+      fetchComments();
+    } catch (error) {
+      alert("댓글 등록에 실패했습니다.");
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: '0.9em', color: '#777', marginBottom: '5px' }}>댓글 {comments.length}개</div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 10px 0', fontSize: '0.9em' }}>
+        {comments.map(c => (
+          <li key={c.id} style={{ background: '#f9f9f9', padding: '5px 10px', borderRadius: '4px', marginBottom: '3px' }}>
+            {c.content}
+          </li>
+        ))}
+      </ul>
+      <form onSubmit={handleCommentSubmit} style={{ display: 'flex', gap: '5px' }}>
+        <input
+          value={newComment} onChange={(e) => setNewComment(e.target.value)}
+          placeholder="익명 댓글 작성..."
+          style={{ flexGrow: 1, padding: '5px', fontSize: '0.85em', borderRadius: '4px', border: '1px solid #ddd' }}
+        />
+        <button type="submit" style={{ padding: '5px 10px', fontSize: '0.85em', cursor: 'pointer' }}>등록</button>
+      </form>
+    </div>
+  );
+}
+
+export default App;
