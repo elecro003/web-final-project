@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 function App() {
@@ -8,30 +8,29 @@ function App() {
   const [description, setDescription] = useState('');
   const [password, setPassword] = useState(''); // 게시글 비밀번호 상태 추가
 
-  // 이메일 인증 상태 (신규 추가!)
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // 이메일 인증 상태
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('inu_auth_token') === 'true';
+  });
   const [email, setEmail] = useState('');
   const [authCode, setAuthCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
 
-  // 1. 화면이 켜질 때 인증 여부 확인 및 게시글 불러오기
-  useEffect(() => {
-    // 브라우저 로컬 스토리지에 '통행증'이 있는지 검사
-    const token = localStorage.getItem('inu_auth_token');
-    if (token === 'true') {
-      setIsAuthenticated(true);
-    }
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const response = await axios.get('/api/posts');
-      setPosts(response.data);
+      if (Array.isArray(response.data)) {
+        setPosts(response.data);
+      }
     } catch (error) {
       console.error("데이터를 불러오는데 실패했습니다.", error);
     }
-  };
+  }, []);
+
+  // 1. 화면이 켜질 때 게시글 불러오기
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   // 2. 인증번호 전송 요청 API 호출
   const handleRequestCode = async (e) => {
@@ -39,7 +38,7 @@ function App() {
     try {
       const res = await axios.post('/api/auth/request-code', { email });
       alert(res.data.message);
-      setIsCodeSent(true); // 전송 성공 시 인증번호 입력창 띄우기
+      setIsCodeSent(true);
     } catch (error) {
       alert(error.response?.data?.message || "오류가 발생했습니다.");
     }
@@ -51,8 +50,6 @@ function App() {
     try {
       const res = await axios.post('/api/auth/verify-code', { email, code: authCode });
       alert(res.data.message);
-
-      // ★ 핵심: 인증 성공 시 브라우저(localStorage)에 통행증 저장
       localStorage.setItem('inu_auth_token', 'true');
       setIsAuthenticated(true);
     } catch (error) {
@@ -72,7 +69,7 @@ function App() {
       setPassword('');
       fetchPosts();
     } catch (error) {
-      console.error("게시글 등록 실패", error);
+      alert(error.response?.data?.message || "게시글 등록에 실패했습니다.");
     }
   };
 
@@ -96,25 +93,18 @@ function App() {
     <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto' }}>
       <h1>INU CSE 익명 게시판</h1>
 
-      {/* ★ 조건부 렌더링: 
-        isAuthenticated(인증됨)가 false면 인증창을 보여주고, true면 글쓰기 폼을 보여줍니다. 
-      */}
       {!isAuthenticated ? (
         <div style={{ padding: '20px', background: '#ffebee', marginBottom: '20px', borderRadius: '8px' }}>
           <h3>🔒 인천대 학생 인증이 필요합니다</h3>
-
-          {/* 이메일 입력 폼 */}
           <form onSubmit={handleRequestCode} style={{ marginBottom: '10px' }}>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="인천대 이메일 (@inu.ac.kr)" required
               style={{ padding: '8px', width: '70%', marginRight: '5px' }}
-              disabled={isCodeSent} // 코드 발송 후에는 이메일 수정 불가
+              disabled={isCodeSent}
             />
             <button type="submit" disabled={isCodeSent}>인증번호 받기</button>
           </form>
-
-          {/* 인증번호 입력 폼 (코드가 발송된 후에만 보임) */}
           {isCodeSent && (
             <form onSubmit={handleVerifyCode}>
               <input
@@ -131,21 +121,20 @@ function App() {
           <h3>글 쓰기</h3>
           <input
             value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="제목" style={{ display: 'block', marginBottom: '10px', width: '100%', padding: '8px' }}
+            placeholder="제목" style={{ display: 'block', marginBottom: '10px', width: '100%', padding: '8px', boxSizing: 'border-box' }}
           />
           <textarea
             value={description} onChange={(e) => setDescription(e.target.value)}
-            placeholder="내용을 입력하세요" style={{ display: 'block', marginBottom: '10px', width: '100%', height: '80px', padding: '8px' }}
+            placeholder="내용을 입력하세요" style={{ display: 'block', marginBottom: '10px', width: '100%', height: '80px', padding: '8px', boxSizing: 'border-box' }}
           />
           <input
             type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="삭제용 비밀번호 (4자리 이상)" style={{ display: 'block', marginBottom: '10px', width: '100%', padding: '8px' }}
+            placeholder="삭제용 비밀번호 (4자리 이상)" style={{ display: 'block', marginBottom: '10px', width: '100%', padding: '8px', boxSizing: 'border-box' }}
           />
           <button type="submit" style={{ padding: '10px 20px' }}>등록하기</button>
         </form>
       )}
 
-      {/* 게시글 목록 (인증 여부 상관없이 누구나 볼 수는 있음) */}
       <h3>게시글 목록</h3>
       {posts.length === 0 ? <p>아직 작성된 글이 없습니다.</p> : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -161,8 +150,6 @@ function App() {
                 </button>
               </div>
               <span style={{ color: '#555', display: 'block', marginTop: '8px', marginBottom: '15px' }}>{post.description}</span>
-
-              {/* 댓글 섹션 */}
               <hr style={{ border: '0', borderTop: '1px solid #eee', marginBottom: '10px' }} />
               <CommentSection topicId={post.id} />
             </li>
@@ -173,23 +160,24 @@ function App() {
   );
 }
 
-// 댓글 컴포넌트
 function CommentSection({ topicId }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
 
-  useEffect(() => {
-    fetchComments();
-  }, [topicId]);
-
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       const res = await axios.get(`/api/comments/${topicId}`);
-      setComments(res.data);
+      if (Array.isArray(res.data)) {
+        setComments(res.data);
+      }
     } catch (error) {
       console.error("댓글 로딩 실패", error);
     }
-  };
+  }, [topicId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
@@ -200,7 +188,7 @@ function CommentSection({ topicId }) {
       setNewComment('');
       fetchComments();
     } catch (error) {
-      alert("댓글 등록에 실패했습니다.");
+      alert(error.response?.data?.message || "댓글 등록에 실패했습니다.");
     }
   };
 
