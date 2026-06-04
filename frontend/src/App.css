@@ -188,6 +188,60 @@ body {
   text-align: center;
 }
 
+/* 카테고리 탭 스타일 */
+.category-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.category-tab {
+  padding: 10px 24px;
+  border-radius: 25px;
+  border: 1.5px solid #eee;
+  background-color: #fff;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-tab:hover {
+  background-color: #f0f4f8;
+  border-color: #1976d2;
+}
+
+.category-tab.active {
+  background-color: #1976d2;
+  color: #fff;
+  border-color: #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+}
+
+.category-select-group {
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.category-select-group label {
+  font-weight: 600;
+  color: #555;
+  min-width: 80px;
+}
+
+.post-category-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
 .post-item:hover {
   transform: translateY(-2px);
 }
@@ -202,7 +256,7 @@ body {
 
 .post-title {
   font-size: 1.25rem;
-  color: #1976d2;
+  color: #000;
   font-weight: 700;
   text-align: left;
 }

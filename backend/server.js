@@ -95,11 +95,11 @@ app.get('/api/posts', async (req, res) => {
 
 app.post('/api/posts', postLimiter, async (req, res) => {
   if (!supabase) return res.status(500).json({ error: "Supabase client not initialized. Check env vars." });
-  const { title, description, password } = req.body;
+  const { title, description, password, category } = req.body;
 
   const { data, error } = await supabase
     .from('topics')
-    .insert([{ title, description, password }])
+    .insert([{ title, description, password, category }])
     .select();
 
   if (error) return res.status(500).json({ error: error.message });

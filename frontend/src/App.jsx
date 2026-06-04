@@ -19,6 +19,13 @@ const getTimeAgo = (dateString) => {
   return date.toLocaleDateString();
 };
 
+// 카테고리 매핑 정보
+const CATEGORIES = [
+  { id: 'free', label: '자유' },
+  { id: 'class', label: '수업' },
+  { id: 'assignment', label: '과제' }
+];
+
 function App() {
   const [posts, setPosts] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -50,23 +57,23 @@ function App() {
         </header>
 
         <Routes>
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
-              <Home 
-                posts={posts} 
-                isAuthenticated={isAuthenticated} 
-                setIsAuthenticated={setIsAuthenticated} 
+              <Home
+                posts={posts}
+                isAuthenticated={isAuthenticated}
+                setIsAuthenticated={setIsAuthenticated}
               />
-            } 
+            }
           />
-          <Route 
-            path="/write" 
-            element={<Write fetchPosts={fetchPosts} />} 
+          <Route
+            path="/write"
+            element={<Write fetchPosts={fetchPosts} />}
           />
-          <Route 
-            path="/posts/:id" 
-            element={<PostDetail posts={posts} fetchPosts={fetchPosts} />} 
+          <Route
+            path="/posts/:id"
+            element={<PostDetail posts={posts} fetchPosts={fetchPosts} />}
           />
         </Routes>
       </div>
@@ -79,6 +86,7 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
   const [email, setEmail] = useState('');
   const [authCode, setAuthCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState('free');
   const navigate = useNavigate();
 
   const handleRequestCode = async (e) => {
@@ -104,6 +112,9 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
     }
   };
 
+  // 선택된 카테고리에 맞는 게시글 필터링
+  const filteredPosts = posts.filter(post => post.category === currentCategory);
+
   return (
     <>
       {!isAuthenticated ? (
@@ -111,10 +122,10 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
           <h3 className="auth-title">🔒 인천대 학생 인증이 필요합니다</h3>
           <form onSubmit={handleRequestCode} className="form-group">
             <input
-              type="email" 
-              value={email} 
+              type="email"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="인천대 이메일 (@inu.ac.kr)" 
+              placeholder="인천대 이메일 (@inu.ac.kr)"
               required
               className="input-text"
               disabled={isCodeSent}
@@ -126,10 +137,10 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
           {isCodeSent && (
             <form onSubmit={handleVerifyCode} className="form-group">
               <input
-                type="text" 
-                value={authCode} 
+                type="text"
+                value={authCode}
                 onChange={(e) => setAuthCode(e.target.value)}
-                placeholder="6자리 인증번호 입력" 
+                placeholder="6자리 인증번호 입력"
                 required
                 className="input-text"
               />
@@ -138,8 +149,8 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
           )}
         </div>
       ) : (
-        <div 
-          className="card write-trigger-card" 
+        <div
+          className="card write-trigger-card"
           onClick={() => navigate('/write')}
           style={{ cursor: 'pointer', textAlign: 'center', color: '#888', border: '1px dashed #1976d2' }}
         >
@@ -147,10 +158,23 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
         </div>
       )}
 
-      <h3 className="post-list-title">게시글 목록</h3>
-      {posts.length === 0 ? <p className="empty-posts">아직 작성된 글이 없습니다.</p> : (
+      {/* 카테고리 선택 탭 */}
+      <div className="category-tabs">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat.id}
+            className={`category-tab ${currentCategory === cat.id ? 'active' : ''}`}
+            onClick={() => setCurrentCategory(cat.id)}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      <h3 className="post-list-title">{CATEGORIES.find(c => c.id === currentCategory).label} 게시글 목록</h3>
+      {filteredPosts.length === 0 ? <p className="empty-posts">아직 작성된 글이 없습니다.</p> : (
         <ul className="post-list">
-          {posts.map(post => (
+          {filteredPosts.map(post => (
             <li key={post.id} className="card post-item" onClick={() => navigate(`/posts/${post.id}`)} style={{ cursor: 'pointer' }}>
               <div className="post-header">
                 <strong className="post-title">{post.title}</strong>
@@ -159,7 +183,7 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
               <span className="post-description-preview">
                 {post.description}
               </span>
-              </li>
+            </li>
           ))}
         </ul>
       )}
@@ -172,6 +196,7 @@ function Write({ fetchPosts }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [password, setPassword] = useState('');
+  const [category, setCategory] = useState('free');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -179,7 +204,7 @@ function Write({ fetchPosts }) {
     if (!title || !description || !password) return alert("제목, 내용, 비밀번호를 모두 입력해주세요!");
 
     try {
-      await axios.post('/api/posts', { title, description, password });
+      await axios.post('/api/posts', { title, description, password, category });
       alert("글이 등록되었습니다!");
       fetchPosts();
       navigate('/');
@@ -191,36 +216,50 @@ function Write({ fetchPosts }) {
   return (
     <form onSubmit={handleSubmit} className="card post-form">
       <h3>새 글 작성</h3>
+
+      <div className="form-group category-select-group">
+        <label>카테고리: </label>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="input-text"
+        >
+          {CATEGORIES.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.label}</option>
+          ))}
+        </select>
+      </div>
+
       <input
-        value={title} 
+        value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="제목을 입력하세요 (최대 30자)" 
+        placeholder="제목을 입력하세요 (최대 30자)"
         className="input-text block-input"
         maxLength={30}
       />
       <div style={{ position: 'relative' }}>
         <textarea
-          value={description} 
+          value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="내용을 입력하세요 (최대 200자)" 
+          placeholder="내용을 입력하세요 (최대 200자)"
           className="textarea-field"
           maxLength={200}
         />
-        <div style={{ 
-          position: 'absolute', 
-          right: '10px', 
-          bottom: '22px', 
-          fontSize: '0.8rem', 
-          color: description.length >= 200 ? '#ff4444' : '#999' 
+        <div style={{
+          position: 'absolute',
+          right: '10px',
+          bottom: '22px',
+          fontSize: '0.8rem',
+          color: description.length >= 200 ? '#ff4444' : '#999'
         }}>
           {description.length} / 200
         </div>
       </div>
       <input
-        type="password" 
-        value={password} 
+        type="password"
+        value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="삭제용 비밀번호 (4자리 이상)" 
+        placeholder="삭제용 비밀번호 (4자리 이상)"
         className="input-text block-input"
       />
       <div style={{ display: 'flex', gap: '10px' }}>
@@ -258,7 +297,10 @@ function PostDetail({ posts, fetchPosts }) {
   return (
     <div className="card post-detail-container">
       <div className="post-header">
-        <h2 className="post-title" style={{ margin: 0 }}>{post.title}</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <span className="post-category-tag">{CATEGORIES.find(c => c.id === post.category)?.label || '기타'}</span>
+          <h2 className="post-title" style={{ margin: 0 }}>{post.title}</h2>
+        </div>
         <span className="post-time" style={{ fontSize: '0.85rem', color: '#999' }}>{getTimeAgo(post.created_at)}</span>
       </div>
       <div className="post-description-full">
@@ -320,7 +362,7 @@ function CommentSection({ topicId }) {
       </ul>
       <form onSubmit={handleCommentSubmit} className="comment-form">
         <input
-          value={newComment} 
+          value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="익명 댓글 작성..."
           className="comment-input"
