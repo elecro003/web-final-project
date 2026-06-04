@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { Resend } = require('resend');
+const emailjs = require('@emailjs/nodejs');
 const rateLimit = require('express-rate-limit');
 const supabase = require('./supabase');
 require('dotenv').config();
@@ -10,9 +10,6 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// Resend 초기화
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 도배 방지 (Rate Limit) 세팅
 const postLimiter = rateLimit({
@@ -47,27 +44,25 @@ app.post('/api/auth/request-code', async (req, res) => {
   otpStore[email] = code;
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: 'elecro003@gmail.com',
-      to: email,
-      subject: '게시판 인증번호 안내',
-      html: `<p>요청하신 인증번호는 <strong>${code}</strong> 입니다.</p>`
-    });
-
-    if (error) {
-      console.error("📧 Resend API 에러:", error);
-      return res.status(500).json({
-        message: "메일 발송에 실패했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.",
-        error: process.env.NODE_ENV === 'development' ? error : undefined
-      });
-    }
+    await emailjs.send(
+      process.env.EMAILJS_SERVICE_ID,
+      process.env.EMAILJS_TEMPLATE_ID,
+      {
+        email: email, // 받는 사람 (템플릿의 {{email}})
+        passcode: code // 인증번호 (템플릿의 {{passcode}})
+      },
+      {
+        publicKey: process.env.EMAILJS_PUBLIC_KEY,
+        privateKey: process.env.EMAILJS_PRIVATE_KEY
+      }
+    );
 
     res.json({ message: "인증 번호가 발송되었습니다. 메일함을 확인해주세요!" });
   } catch (err) {
-    console.error("📧 서버 내부 에러 (메일 발송 중):", err);
+    console.error("📧 EmailJS 전송 에러:", err);
     res.status(500).json({
-      message: "메일 발송 중 내부 서버 오류가 발생했습니다.",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      message: "메일 발송에 실패했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.",
+      error: process.env.NODE_ENV === 'development' ? err : undefined
     });
   }
 });
