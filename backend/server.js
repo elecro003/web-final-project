@@ -6,7 +6,7 @@ const supabase = require('./supabase');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -55,8 +55,8 @@ app.post('/api/auth/request-code', async (req, res) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: '[INU CSE] 학교 인증 코드입니다.',
-    text: `요청하신 인증 번호는 [ ${code} ] 입니다. 화면에 입력해 주세요!`,
+    subject: '[INU CSE 익명 커뮤니티] 학교 인증 코드입니다.',
+    text: `요청하신 인증 번호는 [${code}] 입니다. 화면에 입력해 주세요.`,
   };
 
   try {
