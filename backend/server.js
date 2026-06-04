@@ -31,11 +31,12 @@ const commentLimiter = rateLimit({
 // 임시로 인증번호를 저장할 서버 메모리 공간
 const otpStore = {};
 
-// (Nodemailer) 세팅 - Render/Production 환경 최적화
+// (Nodemailer) 세팅 - Render/Production 환경 최적화 (2525 포트 우회 설정)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // port 465 사용 시 true
+  port: 2525,
+  secure: false, // 2525 포트는 STARTTLS를 사용하므로 false여야 함
+  requireTLS: true, // TLS 강제
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
