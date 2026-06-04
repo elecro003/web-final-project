@@ -83,6 +83,7 @@ app.post('/api/auth/verify-code', (req, res) => {
 // ==========================================
 
 app.get('/api/posts', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Supabase client not initialized. Check env vars." });
   const { data, error } = await supabase
     .from('topics')
     .select('*')
@@ -93,6 +94,7 @@ app.get('/api/posts', async (req, res) => {
 });
 
 app.post('/api/posts', postLimiter, async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Supabase client not initialized. Check env vars." });
   const { title, description, password } = req.body;
 
   const { data, error } = await supabase
@@ -105,6 +107,7 @@ app.post('/api/posts', postLimiter, async (req, res) => {
 });
 
 app.delete('/api/posts/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Supabase client not initialized. Check env vars." });
   const { id } = req.params;
   const { password } = req.body;
 
@@ -137,6 +140,7 @@ app.delete('/api/posts/:id', async (req, res) => {
 // ==========================================
 
 app.get('/api/comments/:topic_id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Supabase client not initialized. Check env vars." });
   const { topic_id } = req.params;
   const { data, error } = await supabase
     .from('comments')
@@ -149,6 +153,7 @@ app.get('/api/comments/:topic_id', async (req, res) => {
 });
 
 app.post('/api/comments', commentLimiter, async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Supabase client not initialized. Check env vars." });
   const { topic_id, content } = req.body;
 
   const { data, error } = await supabase
@@ -160,6 +165,11 @@ app.post('/api/comments', commentLimiter, async (req, res) => {
   res.json({ message: "댓글이 등록되었습니다!", data });
 });
 
-app.listen(PORT, () => {
-  console.log(`서버가 ${PORT}번 포트에서 실행 중입니다.`);
+// Supabase 연결 상태 확인
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  console.error("❌ 에러: SUPABASE_URL 또는 SUPABASE_KEY가 설정되지 않았습니다. .env 파일이나 환경 변수를 확인하세요.");
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ 서버가 ${PORT}번 포트에서 실행 중입니다. (0.0.0.0)`);
 });
