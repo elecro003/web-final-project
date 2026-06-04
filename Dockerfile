@@ -1,5 +1,5 @@
 # React 프론트엔드 빌드
-FROM node:20 AS build-stage
+FROM node:22 AS build-stage
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Nginx + Node.js (Express) 단일 컨테이너 세팅
-FROM node:20
+FROM node:22
 RUN apt-get update && apt-get install -y nginx
 
 WORKDIR /app
