@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const rateLimit = require('express-rate-limit');
 const supabase = require('./supabase');
 require('dotenv').config();
@@ -10,6 +10,9 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Resend 초기화
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 도배 방지 (Rate Limit) 세팅
 const postLimiter = rateLimit({
@@ -31,19 +34,6 @@ const commentLimiter = rateLimit({
 // 임시로 인증번호를 저장할 서버 메모리 공간
 const otpStore = {};
 
-// (Nodemailer) 세팅 - Render/Production 환경 최적화 (2525 포트 우회 설정)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 2525,
-  secure: false, // 2525 포트는 STARTTLS를 사용하므로 false여야 함
-  requireTLS: true, // TLS 강제
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 10000, // 10초 타임아웃 설정 (504 방지)
-});
-
 // ==========================================
 // 🔐 이메일 인증 API 구역
 // ==========================================
@@ -56,23 +46,28 @@ app.post('/api/auth/request-code', async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore[email] = code;
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: '[INU CSE 익명 커뮤니티] 학교 인증 코드입니다.',
-    text: `요청하신 인증 번호는 [${code}] 입니다. 화면에 입력해 주세요.`,
-  };
-
   try {
-    // transporter.sendMail은 에러 발생 시 throw하므로 try-catch로 확실히 잡음
-    await transporter.sendMail(mailOptions);
+    const { data, error } = await resend.emails.send({
+      from: 'elecro003@gmail.com',
+      to: email,
+      subject: '게시판 인증번호 안내',
+      html: `<p>요청하신 인증번호는 <strong>${code}</strong> 입니다.</p>`
+    });
+
+    if (error) {
+      console.error("📧 Resend API 에러:", error);
+      return res.status(500).json({
+        message: "메일 발송에 실패했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.",
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+
     res.json({ message: "인증 번호가 발송되었습니다. 메일함을 확인해주세요!" });
-  } catch (error) {
-    console.error("📧 메일 발송 에러:", error);
-    // 에러 발생 시 서버가 죽지 않고 클라이언트에게 에러 응답 반환
-    res.status(500).json({ 
-      message: "메일 발송에 실패했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+  } catch (err) {
+    console.error("📧 서버 내부 에러 (메일 발송 중):", err);
+    res.status(500).json({
+      message: "메일 발송 중 내부 서버 오류가 발생했습니다.",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
