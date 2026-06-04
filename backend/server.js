@@ -31,13 +31,16 @@ const commentLimiter = rateLimit({
 // 임시로 인증번호를 저장할 서버 메모리 공간
 const otpStore = {};
 
-// (Nodemailer) 세팅
+// (Nodemailer) 세팅 - Render/Production 환경 최적화
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // port 465 사용 시 true
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10초 타임아웃 설정 (504 방지)
 });
 
 // ==========================================
@@ -60,10 +63,16 @@ app.post('/api/auth/request-code', async (req, res) => {
   };
 
   try {
+    // transporter.sendMail은 에러 발생 시 throw하므로 try-catch로 확실히 잡음
     await transporter.sendMail(mailOptions);
     res.json({ message: "인증 번호가 발송되었습니다. 메일함을 확인해주세요!" });
   } catch (error) {
-    res.status(500).json({ message: "메일 발송에 실패했습니다." });
+    console.error("📧 메일 발송 에러:", error);
+    // 에러 발생 시 서버가 죽지 않고 클라이언트에게 에러 응답 반환
+    res.status(500).json({ 
+      message: "메일 발송에 실패했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    });
   }
 });
 
