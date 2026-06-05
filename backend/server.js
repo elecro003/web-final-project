@@ -8,6 +8,11 @@ require('dotenv').config();
 const app = express();
 const PORT = 3000;
 
+// 헬스 체크(건강 검진)용 기본 라우터 추가
+app.get('/', (req, res) => {
+  res.status(200).send('INU CSE API Server is running perfectly!');
+});
+
 app.use(cors());
 app.use(express.json());
 
@@ -174,4 +179,5 @@ if (process.env.NODE_ENV !== 'test') {
     console.log(`✅ 서버가 ${PORT}번 포트에서 실행 중입니다. (0.0.0.0)`);
   });
 }
+
 module.exports = app;
