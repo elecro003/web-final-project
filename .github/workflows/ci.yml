@@ -1,0 +1,34 @@
+name: INU CSE Project CI
+
+# 언제 이 검사기를 작동시킬 것인가?
+on:
+  pull_request:
+    branches: [ "main" ] # main 브랜치로 PR(합치기 요청)이 올라올 때마다 실행
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # 깃허브가 제공하는 가상 우분투 컴퓨터 사용
+
+    steps:
+    # 1. 내 깃허브 코드를 가상 컴퓨터로 복사해 옴
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # 2. Node.js 설치 (버전은 현재 쓰시는 버전에 맞게 수정 가능)
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22.x'
+
+    # 3. 백엔드 폴더로 이동해서 패키지 설치
+    - name: Install Dependencies
+      run: npm install
+      working-directory: ./backend
+
+    # 4. 테스트 코드 실행! (여기서 실패하면 뻘건 에러가 뜨고 멈춥니다)
+    - name: Run Tests
+      run: npm test
+      working-directory: ./backend
+      env: 
+        SUPABASE_URL: "https://test.supabase.co"
+        SUPABASE_KEY: "fake-test-key"
