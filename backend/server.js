@@ -59,7 +59,7 @@ app.post('/api/auth/request-code', async (req, res) => {
 
     res.json({ message: "인증 번호가 발송되었습니다. 메일함을 확인해주세요!" });
   } catch (err) {
-    console.error("📧 EmailJS 전송 에러:", err);
+    console.error("EmailJS 전송 에러:", err);
     res.status(500).json({
       message: "메일 발송에 실패했습니다. 관리자에게 문의하거나 잠시 후 다시 시도해주세요.",
       error: process.env.NODE_ENV === 'development' ? err : undefined

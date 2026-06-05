@@ -69,11 +69,11 @@ function App() {
           />
           <Route
             path="/write"
-            element={<Write fetchPosts={fetchPosts} />}
+            element={<Write fetchPosts={fetchPosts} isAuthenticated={isAuthenticated} />}
           />
           <Route
             path="/posts/:id"
-            element={<PostDetail posts={posts} fetchPosts={fetchPosts} />}
+            element={<PostDetail posts={posts} fetchPosts={fetchPosts} isAuthenticated={isAuthenticated} />}
           />
         </Routes>
       </div>
@@ -192,12 +192,21 @@ function Home({ posts, isAuthenticated, setIsAuthenticated }) {
 }
 
 // 글쓰기 화면 컴포넌트
-function Write({ fetchPosts }) {
+function Write({ fetchPosts, isAuthenticated }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [password, setPassword] = useState('');
   const [category, setCategory] = useState('free');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      alert("글 작성을 위해 인천대 학생 인증이 필요합니다.");
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (!isAuthenticated) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -271,7 +280,7 @@ function Write({ fetchPosts }) {
 }
 
 // 상세 화면 컴포넌트
-function PostDetail({ posts, fetchPosts }) {
+function PostDetail({ posts, fetchPosts, isAuthenticated }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const post = posts.find(p => p.id === parseInt(id));
@@ -311,13 +320,13 @@ function PostDetail({ posts, fetchPosts }) {
         <button onClick={handleDelete} className="btn-delete">🗑️ 삭제하기</button>
       </div>
       <hr className="post-divider" />
-      <CommentSection topicId={post.id} />
+      <CommentSection topicId={post.id} isAuthenticated={isAuthenticated} />
     </div>
   );
 }
 
 // 댓글 컴포넌트
-function CommentSection({ topicId }) {
+function CommentSection({ topicId, isAuthenticated }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
 
@@ -338,6 +347,10 @@ function CommentSection({ topicId }) {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      alert("댓글 작성을 위해 인천대 학생 인증이 필요합니다.");
+      return;
+    }
     if (!newComment.trim()) return;
 
     try {
@@ -364,10 +377,11 @@ function CommentSection({ topicId }) {
         <input
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="익명 댓글 작성..."
+          placeholder={isAuthenticated ? "익명 댓글 작성..." : "인증 후 댓글 작성이 가능합니다."}
           className="comment-input"
+          disabled={!isAuthenticated}
         />
-        <button type="submit" className="btn-comment-submit">등록</button>
+        <button type="submit" className="btn-comment-submit" disabled={!isAuthenticated}>등록</button>
       </form>
     </div>
   );
