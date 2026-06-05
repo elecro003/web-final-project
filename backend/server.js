@@ -169,7 +169,8 @@ app.post('/api/comments', commentLimiter, async (req, res) => {
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
   console.error("❌ 에러: SUPABASE_URL 또는 SUPABASE_KEY가 설정되지 않았습니다. .env 파일이나 환경 변수를 확인하세요.");
 }
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ 서버가 ${PORT}번 포트에서 실행 중입니다. (0.0.0.0)`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ 서버가 ${PORT}번 포트에서 실행 중입니다. (0.0.0.0)`);
+  });
+}
