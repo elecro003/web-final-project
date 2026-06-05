@@ -16,7 +16,8 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 기본적으로 중앙 정렬 (타이틀, 버튼 등) */
+  align-items: center;
+  /* 기본적으로 중앙 정렬 (타이틀, 버튼 등) */
 }
 
 .header {
@@ -36,7 +37,8 @@ body {
   padding: 30px;
   margin-bottom: 20px;
   border: 1px solid #eee;
-  width: 100%; /* 부모 너비 가득 채우기 */
+  width: 100%;
+  /* 부모 너비 가득 채우기 */
   box-sizing: border-box;
 }
 
@@ -44,7 +46,8 @@ body {
 .auth-container {
   background-color: #ffffff;
   border: 2px solid #1976d2;
-  max-width: 600px; /* 인증창은 너무 크지 않게 */
+  max-width: 600px;
+  /* 인증창은 너무 크지 않게 */
 }
 
 .auth-title {
@@ -114,7 +117,8 @@ body {
 /* 글 쓰기 폼 */
 .post-form {
   background-color: #ffffff;
-  max-width: 800px; /* 글쓰기 폼은 적당한 너비 유지 */
+  max-width: 800px;
+  /* 글쓰기 폼은 적당한 너비 유지 */
 }
 
 .post-form h3 {
